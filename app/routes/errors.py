@@ -1,4 +1,8 @@
+import logging
+
 from flask import render_template
+
+logger = logging.getLogger(__name__)
 
 
 def register_error_handlers(app):
@@ -12,4 +16,5 @@ def register_error_handlers(app):
 
     @app.errorhandler(500)
     def internal_error(e):
+        logger.exception("Internal server error: %s", e)
         return render_template("errors/500.html"), 500
