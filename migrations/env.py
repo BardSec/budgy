@@ -5,8 +5,11 @@ from flask import current_app
 from alembic import context
 
 config = context.config
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+try:
+    if config.config_file_name is not None:
+        fileConfig(config.config_file_name)
+except (KeyError, FileNotFoundError):
+    pass
 logger = logging.getLogger("alembic.env")
 
 
