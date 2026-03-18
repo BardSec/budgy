@@ -38,6 +38,11 @@ class PurchaseForm(FlaskForm):
     invoice_number = StringField(
         "Invoice Number", validators=[Optional(), Length(max=100)]
     )
+    payment_method = SelectField(
+        "Payment Method",
+        choices=[("", "— Select —")] + [(m, m) for m in Purchase.PAYMENT_METHODS],
+        validators=[Optional()],
+    )
     attachments = MultipleFileField(
         "Receipt/Invoice Files",
         validators=[

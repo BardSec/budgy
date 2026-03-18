@@ -146,6 +146,7 @@ def create():
             notes=form.notes.data,
             po_number=form.po_number.data,
             invoice_number=form.invoice_number.data,
+            payment_method=form.payment_method.data or None,
             budget_line_item_id=form.budget_line_item_id.data,
             custom_account_code=form.custom_account_code.data if is_other else None,
             custom_account_description=form.custom_account_description.data if is_other else None,
@@ -247,6 +248,7 @@ def edit(id):
         purchase.notes = form.notes.data
         purchase.po_number = form.po_number.data
         purchase.invoice_number = form.invoice_number.data
+        purchase.payment_method = form.payment_method.data or None
         purchase.budget_line_item_id = form.budget_line_item_id.data
         purchase.custom_account_code = form.custom_account_code.data if is_other else None
         purchase.custom_account_description = form.custom_account_description.data if is_other else None
@@ -320,7 +322,7 @@ def export_csv():
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "ID", "Vendor", "Date", "Amount", "Status", "Line Item",
+        "ID", "Vendor", "Date", "Amount", "Status", "Payment Method", "Line Item",
         "Custom Code", "Description", "PO #", "Invoice #",
         "Submitted By", "Fiscal Year", "Created At",
     ])
@@ -332,6 +334,7 @@ def export_csv():
             p.purchase_date.isoformat(),
             str(p.amount),
             p.status,
+            p.payment_method or "",
             p.line_item.display_label if p.line_item else "",
             p.custom_account_code or "",
             p.description or "",

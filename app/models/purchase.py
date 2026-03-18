@@ -6,6 +6,15 @@ class Purchase(db.Model):
     __tablename__ = "purchases"
 
     STATUSES = ["submitted", "reviewed", "approved", "rejected"]
+    PAYMENT_METHODS = [
+        "Credit Card - Andy",
+        "Credit Card - James",
+        "Credit Card - Brady",
+        "Credit Card - Danielle",
+        "Amazon",
+        "Purchase Order",
+        "Other",
+    ]
 
     id = db.Column(db.Integer, primary_key=True)
     vendor_name = db.Column(db.String(255), nullable=False, index=True)
@@ -15,6 +24,7 @@ class Purchase(db.Model):
     notes = db.Column(db.Text, nullable=True)
     po_number = db.Column(db.String(100), nullable=True)
     invoice_number = db.Column(db.String(100), nullable=True)
+    payment_method = db.Column(db.String(50), nullable=True)
 
     budget_line_item_id = db.Column(
         db.Integer, db.ForeignKey("budget_line_items.id"), nullable=False
