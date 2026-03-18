@@ -1,0 +1,16 @@
+Flask==3.1.0
+Flask-Login==0.6.3
+Flask-WTF==1.2.2
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.1.0
+SQLAlchemy==2.0.36
+alembic==1.14.1
+psycopg2-binary==2.9.10
+python-dotenv==1.0.1
+boto3==1.35.81
+msal==1.31.1
+requests==2.32.3
+gunicorn==23.0.0
+WTForms==3.2.1
+email-validator==2.2.0
+Werkzeug==3.1.3

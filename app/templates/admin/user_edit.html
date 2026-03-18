@@ -1,0 +1,36 @@
+{% extends "layouts/base.html" %}
+{% block title %}Edit User{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2>Edit User: {{ user.email }}</h2>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="text" class="form-control" value="{{ user.email }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.display_name.label.text }}</label>
+                        {{ form.display_name(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.role.label.text }}</label>
+                        {{ form.role(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.is_active.label.text }}</label>
+                        {{ form.is_active(class="form-select") }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

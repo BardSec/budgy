@@ -1,0 +1,33 @@
+{% extends "layouts/base.html" %}
+{% block title %}{% if edit %}Edit{% else %}New{% endif %} Allocation{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2>{% if edit %}Edit{% else %}New{% endif %} Budget Allocation</h2>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.fiscal_year_id.label.text }}</label>
+                        {{ form.fiscal_year_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.budget_line_item_id.label.text }}</label>
+                        {{ form.budget_line_item_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.allocated_amount.label.text }}</label>
+                        {{ form.allocated_amount(class="form-control", step="0.01", min="0") }}
+                        {% for e in form.allocated_amount.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a href="{{ url_for('admin.allocations') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

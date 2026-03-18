@@ -1,0 +1,36 @@
+{% extends "layouts/base.html" %}
+{% block title %}Import Allocations{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2>Import Budget Allocations from CSV</h2>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Fiscal Year</label>
+                        <select name="fiscal_year_id" class="form-select" required>
+                            {% for fy in fiscal_years %}
+                            <option value="{{ fy.id }}">{{ fy.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">CSV File</label>
+                        <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+                        <div class="form-text">
+                            CSV must have columns: <code>code</code>, <code>amount</code><br>
+                            Example: <code>72250 336,50000.00</code>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Import</button>
+                        <a href="{{ url_for('admin.allocations') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

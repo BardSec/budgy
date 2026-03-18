@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: budgy
+      POSTGRES_PASSWORD: budgy
+      POSTGRES_DB: budgy
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U budgy"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    command: >
+      bash -c "flask db upgrade &&
+               flask seed run &&
+               gunicorn --bind 0.0.0.0:8000 --workers 2 --reload --timeout 120 wsgi:app"
+    ports:
+      - "5000:8000"
+    volumes:
+      - .:/app
+      - ./uploads:/app/uploads
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,0 +1,109 @@
+{% extends "layouts/base.html" %}
+{% block title %}Budget Overview{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-piggy-bank"></i> Budget Overview</h2>
+    <div class="d-flex gap-2 align-items-center">
+        <form method="GET" class="d-flex gap-2">
+            <select name="fy" class="form-select form-select-sm" onchange="this.form.submit()">
+                {% for fy in fiscal_years %}
+                <option value="{{ fy.id }}" {% if fy.id == fiscal_year.id %}selected{% endif %}>{{ fy.label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <a href="{{ url_for('budget.export_csv', fy=fiscal_year.id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-download"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Totals -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center border-primary">
+            <div class="card-body">
+                <h6 class="text-muted">Total Allocated</h6>
+                <h3 class="text-primary">${{ "{:,.2f}".format(totals.total_allocated) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-success">
+            <div class="card-body">
+                <h6 class="text-muted">Approved Spent</h6>
+                <h3 class="text-success">${{ "{:,.2f}".format(totals.total_spent) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-warning">
+            <div class="card-body">
+                <h6 class="text-muted">Pending</h6>
+                <h3 class="text-warning">${{ "{:,.2f}".format(totals.total_pending) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center {% if totals.total_remaining < 0 %}border-danger{% else %}border-info{% endif %}">
+            <div class="card-body">
+                <h6 class="text-muted">Remaining</h6>
+                <h3 class="{% if totals.total_remaining < 0 %}text-danger{% else %}text-info{% endif %}">${{ "{:,.2f}".format(totals.total_remaining) }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Table -->
+<div class="card">
+    <div class="card-header"><h5 class="mb-0">Allocations &mdash; FY {{ fiscal_year.label }}</h5></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th class="text-end">Allocated</th>
+                    <th class="text-end">Approved Spent</th>
+                    <th class="text-end">Pending</th>
+                    <th class="text-end">Remaining</th>
+                    <th class="text-end">% Used</th>
+                    <th class="text-end">Purchases</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in summary %}
+                {% set row_class = "" %}
+                {% if s.pct_used|float >= 100 %}{% set row_class = "budget-danger" %}
+                {% elif s.pct_used|float >= 85 %}{% set row_class = "budget-warning" %}{% endif %}
+                <tr class="{{ row_class }}">
+                    <td><strong>{{ s.line_item.code }}</strong></td>
+                    <td>{{ s.line_item.name }}</td>
+                    <td class="text-end">${{ "{:,.2f}".format(s.allocated) }}</td>
+                    <td class="text-end">${{ "{:,.2f}".format(s.spent) }}</td>
+                    <td class="text-end">${{ "{:,.2f}".format(s.pending) }}</td>
+                    <td class="text-end {% if s.remaining < 0 %}text-danger fw-bold{% endif %}">${{ "{:,.2f}".format(s.remaining) }}</td>
+                    <td class="text-end">{{ s.pct_used }}%</td>
+                    <td class="text-end">{{ s.purchase_count }}</td>
+                </tr>
+                {% endfor %}
+                {% if not summary %}
+                <tr><td colspan="8" class="text-center text-muted py-4">No allocations found for this fiscal year.</td></tr>
+                {% endif %}
+            </tbody>
+            {% if summary %}
+            <tfoot class="table-dark">
+                <tr>
+                    <th colspan="2">Totals</th>
+                    <th class="text-end">${{ "{:,.2f}".format(totals.total_allocated) }}</th>
+                    <th class="text-end">${{ "{:,.2f}".format(totals.total_spent) }}</th>
+                    <th class="text-end">${{ "{:,.2f}".format(totals.total_pending) }}</th>
+                    <th class="text-end">${{ "{:,.2f}".format(totals.total_remaining) }}</th>
+                    <th class="text-end">{{ totals.pct_used }}%</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+{% endblock %}

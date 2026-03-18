@@ -1,0 +1,29 @@
+{% extends "layouts/base.html" %}
+{% block title %}Fiscal Years{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-calendar3"></i> Fiscal Years</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.fiscal_year_create') }}" class="btn btn-primary btn-sm">New Fiscal Year</a>
+        <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+    </div>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th>Label</th><th>Start</th><th>End</th><th>Active</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for fy in fiscal_years %}
+            <tr>
+                <td><strong>{{ fy.label }}</strong></td>
+                <td>{{ fy.start_date.strftime('%m/%d/%Y') }}</td>
+                <td>{{ fy.end_date.strftime('%m/%d/%Y') }}</td>
+                <td>{% if fy.is_active %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}</td>
+                <td><a href="{{ url_for('admin.fiscal_year_edit', id=fy.id) }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "layouts/base.html" %}
+{% block title %}Purchases{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-receipt"></i> Purchases</h2>
+    <div class="d-flex gap-2">
+        {% if current_user.is_manager %}
+        <a href="{{ url_for('purchases.export_csv', **request.args) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-download"></i> Export CSV
+        </a>
+        {% endif %}
+        <a href="{{ url_for('purchases.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> New Purchase
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label form-label-sm">Search</label>
+                <input type="text" name="q" class="form-control form-control-sm" value="{{ request.args.get('q', '') }}" placeholder="Vendor, PO#...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm">Fiscal Year</label>
+                <select name="fy" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for fy in fiscal_years %}
+                    <option value="{{ fy.id }}" {% if request.args.get('fy')|int == fy.id %}selected{% endif %}>{{ fy.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm">Line Item</label>
+                <select name="line_item" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for li in line_items %}
+                    <option value="{{ li.id }}" {% if request.args.get('line_item')|int == li.id %}selected{% endif %}>{{ li.code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label form-label-sm">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for s in statuses %}
+                    <option value="{{ s }}" {% if request.args.get('status') == s %}selected{% endif %}>{{ s|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label form-label-sm">From</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request.args.get('date_from', '') }}">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label form-label-sm">To</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request.args.get('date_to', '') }}">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label form-label-sm">Sort</label>
+                <select name="sort" class="form-select form-select-sm">
+                    <option value="date_desc" {% if request.args.get('sort', 'date_desc') == 'date_desc' %}selected{% endif %}>Date (new)</option>
+                    <option value="date_asc" {% if request.args.get('sort') == 'date_asc' %}selected{% endif %}>Date (old)</option>
+                    <option value="amount_desc" {% if request.args.get('sort') == 'amount_desc' %}selected{% endif %}>Amount (high)</option>
+                    <option value="amount_asc" {% if request.args.get('sort') == 'amount_asc' %}selected{% endif %}>Amount (low)</option>
+                    <option value="vendor" {% if request.args.get('sort') == 'vendor' %}selected{% endif %}>Vendor</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Purchases Table -->
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Date</th>
+                <th>Vendor</th>
+                <th>Line Item</th>
+                <th class="text-end">Amount</th>
+                <th>Status</th>
+                <th>Submitted By</th>
+                <th>FY</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in purchases %}
+            <tr>
+                <td>{{ p.purchase_date.strftime('%m/%d/%Y') }}</td>
+                <td><a href="{{ url_for('purchases.detail', id=p.id) }}">{{ p.vendor_name }}</a></td>
+                <td>{{ p.line_item.code if p.line_item else 'N/A' }}</td>
+                <td class="text-end">${{ "{:,.2f}".format(p.amount) }}</td>
+                <td>
+                    {% set badge = {"submitted": "warning", "reviewed": "info", "approved": "success", "rejected": "danger"} %}
+                    <span class="badge bg-{{ badge.get(p.status, 'secondary') }}">{{ p.status }}</span>
+                </td>
+                <td>{{ p.submitter.display_name if p.submitter else 'N/A' }}</td>
+                <td>{{ p.fiscal_year.label if p.fiscal_year else '' }}</td>
+            </tr>
+            {% endfor %}
+            {% if not purchases %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No purchases found.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<nav>
+    <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+        <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&{{ request.query_string.decode() }}">&laquo;</a></li>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+            <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+        {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">&raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

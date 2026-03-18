@@ -1,0 +1,109 @@
+{% extends "layouts/base.html" %}
+{% block title %}Purchase #{{ purchase.id }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-receipt"></i> Purchase #{{ purchase.id }}</h2>
+            <div class="d-flex gap-2">
+                {% if current_user.is_admin or (current_user.id == purchase.submitted_by_user_id and purchase.status == 'submitted') %}
+                <a href="{{ url_for('purchases.edit', id=purchase.id) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                {% endif %}
+                <a href="{{ url_for('purchases.index') }}" class="btn btn-outline-secondary btn-sm">Back to List</a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Purchase Details -->
+            <div class="col-md-8">
+                <div class="card mb-3">
+                    <div class="card-header"><h5 class="mb-0">Purchase Details</h5></div>
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tr><th style="width:180px">Vendor</th><td>{{ purchase.vendor_name }}</td></tr>
+                            <tr><th>Purchase Date</th><td>{{ purchase.purchase_date.strftime('%m/%d/%Y') }}</td></tr>
+                            <tr>
+                                <th>Amount</th>
+                                <td class="fs-5 fw-bold">${{ "{:,.2f}".format(purchase.amount) }}</td>
+                            </tr>
+                            <tr><th>Budget Line Item</th><td>{{ purchase.line_item.display_label if purchase.line_item else 'N/A' }}</td></tr>
+                            {% if purchase.custom_account_code %}
+                            <tr><th>Custom Code</th><td>{{ purchase.custom_account_code }}</td></tr>
+                            <tr><th>Custom Description</th><td>{{ purchase.custom_account_description }}</td></tr>
+                            {% endif %}
+                            <tr><th>Fiscal Year</th><td>{{ purchase.fiscal_year.label if purchase.fiscal_year else 'N/A' }}</td></tr>
+                            <tr><th>PO Number</th><td>{{ purchase.po_number or '—' }}</td></tr>
+                            <tr><th>Invoice Number</th><td>{{ purchase.invoice_number or '—' }}</td></tr>
+                            <tr><th>Description</th><td>{{ purchase.description or '—' }}</td></tr>
+                            <tr><th>Notes</th><td>{{ purchase.notes or '—' }}</td></tr>
+                            <tr><th>Submitted By</th><td>{{ purchase.submitter.display_name if purchase.submitter else 'N/A' }}</td></tr>
+                            <tr><th>Created</th><td>{{ purchase.created_at.strftime('%m/%d/%Y %I:%M %p') if purchase.created_at else '' }}</td></tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>
+                                    {% set badge = {"submitted": "warning", "reviewed": "info", "approved": "success", "rejected": "danger"} %}
+                                    <span class="badge bg-{{ badge.get(purchase.status, 'secondary') }} fs-6">{{ purchase.status|title }}</span>
+                                </td>
+                            </tr>
+                            {% if purchase.review_notes %}
+                            <tr><th>Review Notes</th><td>{{ purchase.review_notes }}</td></tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Attachments -->
+                <div class="card mb-3">
+                    <div class="card-header"><h5 class="mb-0">Attachments</h5></div>
+                    <div class="card-body">
+                        {% if documents %}
+                        <ul class="list-group list-group-flush">
+                            {% for doc in documents %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-file-earmark{% if 'pdf' in doc.content_type %}-pdf{% elif 'image' in doc.content_type %}-image{% endif %}"></i>
+                                    {{ doc.original_filename }}
+                                    <small class="text-muted">({{ (doc.file_size / 1024)|round(1) }} KB)</small>
+                                </span>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('documents.view', id=doc.id) }}" target="_blank" class="btn btn-outline-primary">View</a>
+                                    <a href="{{ url_for('documents.download', id=doc.id) }}" class="btn btn-outline-secondary">Download</a>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted mb-0">No attachments.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Update (managers/admins) -->
+            <div class="col-md-4">
+                {% if current_user.is_manager %}
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Update Status</h5></div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('purchases.update_status', id=purchase.id) }}">
+                            {{ status_form.hidden_tag() }}
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                {{ status_form.status(class="form-select") }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Review Notes</label>
+                                {{ status_form.review_notes(class="form-control", rows=3) }}
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Update Status</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

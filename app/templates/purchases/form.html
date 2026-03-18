@@ -1,0 +1,177 @@
+{% extends "layouts/base.html" %}
+{% block title %}{% if edit %}Edit{% else %}New{% endif %} Purchase{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2>{% if edit %}<i class="bi bi-pencil"></i> Edit Purchase{% else %}<i class="bi bi-plus-lg"></i> New Purchase{% endif %}</h2>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.vendor_name.label.text }} *</label>
+                            {{ form.vendor_name(class="form-control", id="vendor_name", autocomplete="off") }}
+                            <div id="vendor-suggestions" class="list-group" style="position:absolute;z-index:100;"></div>
+                            {% for e in form.vendor_name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">{{ form.purchase_date.label.text }} *</label>
+                            {{ form.purchase_date(class="form-control", type="date") }}
+                            {% for e in form.purchase_date.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">{{ form.amount.label.text }} *</label>
+                            {{ form.amount(class="form-control", step="0.01", min="0.01") }}
+                            {% for e in form.amount.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.budget_line_item_id.label.text }} *</label>
+                            {{ form.budget_line_item_id(class="form-select", id="budget_line_item_id") }}
+                            {% for e in form.budget_line_item_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">{{ form.po_number.label.text }}</label>
+                            {{ form.po_number(class="form-control") }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">{{ form.invoice_number.label.text }}</label>
+                            {{ form.invoice_number(class="form-control") }}
+                        </div>
+                    </div>
+
+                    <div id="custom-account-fields" class="row" style="display:none;">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.custom_account_code.label.text }} *</label>
+                            {{ form.custom_account_code(class="form-control") }}
+                            <div class="form-text">Required when "Other" is selected.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.custom_account_description.label.text }} *</label>
+                            {{ form.custom_account_description(class="form-control") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="fiscal-year-display">
+                        <small class="text-muted">Fiscal year will be determined by purchase date.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.description.label.text }}</label>
+                        {{ form.description(class="form-control", rows=3) }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.notes.label.text }}</label>
+                        {{ form.notes(class="form-control", rows=2) }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.attachments.label.text }}</label>
+                        <input type="file" name="attachments" class="form-control" multiple accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="form-text">PDF, JPG, PNG. Max {{ config.MAX_UPLOAD_SIZE_MB }}MB each.</div>
+                    </div>
+
+                    {% if edit and purchase %}
+                    {% set existing_docs = purchase.documents.all() %}
+                    {% if existing_docs %}
+                    <div class="mb-3">
+                        <label class="form-label">Existing Attachments</label>
+                        <ul class="list-group">
+                            {% for doc in existing_docs %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-file-earmark"></i> {{ doc.original_filename }}
+                                    <small class="text-muted">({{ (doc.file_size / 1024)|round(1) }} KB)</small>
+                                </span>
+                                <a href="{{ url_for('documents.view', id=doc.id) }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            {% if edit %}Update Purchase{% else %}Submit Purchase{% endif %}
+                        </button>
+                        <a href="{{ url_for('purchases.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Show/hide custom account fields based on line item selection
+const lineItemSelect = document.getElementById('budget_line_item_id');
+const customFields = document.getElementById('custom-account-fields');
+
+function toggleCustomFields() {
+    const selectedText = lineItemSelect.options[lineItemSelect.selectedIndex].text;
+    customFields.style.display = selectedText.includes('Other') ? '' : 'none';
+}
+
+lineItemSelect.addEventListener('change', toggleCustomFields);
+toggleCustomFields();
+
+// Fiscal year display based on date
+const dateInput = document.querySelector('input[type="date"]');
+const fyDisplay = document.getElementById('fiscal-year-display');
+
+function updateFYDisplay() {
+    const val = dateInput.value;
+    if (!val) { fyDisplay.innerHTML = '<small class="text-muted">Fiscal year will be determined by purchase date.</small>'; return; }
+    const d = new Date(val + 'T00:00:00');
+    const month = d.getMonth() + 1;
+    const year = d.getFullYear();
+    let fy;
+    if (month >= 7) { fy = year + '-' + (year + 1); }
+    else { fy = (year - 1) + '-' + year; }
+    fyDisplay.innerHTML = '<small class="text-info"><i class="bi bi-calendar-check"></i> This purchase counts toward FY ' + fy + '</small>';
+}
+
+dateInput.addEventListener('change', updateFYDisplay);
+updateFYDisplay();
+
+// Vendor autocomplete
+let vendorTimeout;
+const vendorInput = document.getElementById('vendor_name');
+const suggestions = document.getElementById('vendor-suggestions');
+
+vendorInput.addEventListener('input', function() {
+    clearTimeout(vendorTimeout);
+    const q = this.value.trim();
+    if (q.length < 2) { suggestions.innerHTML = ''; return; }
+    vendorTimeout = setTimeout(() => {
+        fetch('{{ url_for("purchases.vendor_autocomplete") }}?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(data => {
+                suggestions.innerHTML = data.results.map(v =>
+                    '<button type="button" class="list-group-item list-group-item-action">' + v + '</button>'
+                ).join('');
+                suggestions.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        vendorInput.value = btn.textContent;
+                        suggestions.innerHTML = '';
+                    });
+                });
+            });
+    }, 300);
+});
+
+document.addEventListener('click', (e) => {
+    if (!vendorInput.contains(e.target) && !suggestions.contains(e.target)) {
+        suggestions.innerHTML = '';
+    }
+});
+</script>
+{% endblock %}
